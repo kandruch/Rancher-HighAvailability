@@ -17,4 +17,4 @@ This guide assumes you have multiple AWS accounts. For most enterprise customers
 
 # Breakdown of the AWS services involved.
 
-![Rancher Installation Logic](./RKEInstallationLogic.pdf)
+![Rancher Installation Logic](./rke-installation-logic.png)
