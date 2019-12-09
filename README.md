@@ -6,7 +6,7 @@ Today, I'm going to show you how to leverage the power of Rancher in a multi acc
 
 Let's get started!
 
-# Prerequisites:
+## Prerequisites:
 
 This guide assumes you have multiple AWS accounts. For most enterprise customers you would normally have a dedicated shared services account or CI/CD account to host your management tools. Please refer to the AWS landing zone overview for more details https://aws.amazon.com/solutions/aws-landing-zone/.
 
@@ -15,6 +15,15 @@ This guide assumes you have multiple AWS accounts. For most enterprise customers
 2) Optional: An EC2 jumphost if deploying the Network Load Balancer in the private subnets.
 - Since the Kubernetes cluster will be implemented in the private subnets behind an internal network load balancer you will not have direct communication access. However if your building this inside your corporate network and you have SSH access to your AWS accounts then you can skip this step.
 
-# Breakdown of the AWS services involved.
+## Breakdown of the AWS services involved
 
 ![Rancher Installation Logic](./rke-installation-logic.png)
+In order to implement this solution in an automated fashion several AWS services and techniques will be leveraged. I thought it would be useful to dive into each service and briefly discuss how it is being used.
+
+1) AWS CloudFormation with nested stacks
+- The Rancher Kubernetes Engine requires a few items to be in place before installation can happen. For example you need to have the servers you plan to install Rancher on live and accessible on the network. So appropriate security groups with the neccessary ports and network access is required. Having a dedicated template in cloudformation allows you to not only provision the required access you need for the installation setup but it also gives you the ability to make code changes in a repeatable manner in a separate template.
+
+- From an installation perspective, certain services need to be provisioned before other services. In my case I wanted to have the ability to spin up
+
+2)
+ 
