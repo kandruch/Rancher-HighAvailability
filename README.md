@@ -8,7 +8,7 @@ Let's get started!
 
 ## Initial Setup:
 
-In this post we will be using the Rancher Kubernetes Engine (RKE) to simplify the installation complexity of setting up Kubernetes. This of course can be done in various ways, either by using your own laptop and following step by step installation instructions or on an EC2 server itself. However, if your using a laptop or server you need to install various packages like RKE, Kubectl and Helm in a manual fashion, which of course needs to be completed in a sequential order. My preference was to leverage native AWS services like CodeBuild, Lambda, and SecretsManager to not only install the required packages that we need but to successfully and securely install the Rancher services across multiple EC2 machines in an automated way. 
+In this post we will be using the [Rancher Kubernetes Engine (RKE)](https:/rancher.com/docs/rke/latest/en/) to simplify the installation complexity of setting up Kubernetes. This of course can be done in various ways, either by using your own laptop and following step by step installation instructions or on an EC2 server itself. However, if your using a laptop or server you need to install various packages like RKE, [Kubectl](https:/kubernetes.io/docs/reference/kubectl/overview/) and [Helm](https:/helm.sh/) in a manual fashion, which of course needs to be completed in a sequential order. My preference was to leverage native AWS services like [CodeBuild](https://aws.amazon.com/codebuild/), [Lambda](https://aws.amazon.com/lambda/), and [SecretsManager](https://aws.amazon.com/secrets-manager/) to not only install the required packages that we need but to successfully and securely install the Rancher services across multiple EC2 machines in an automated way. 
 
 ## Breakdown of the AWS services involved
 
@@ -26,21 +26,25 @@ Example:
 `aws s3 mb s3://rancher-ha –region us-east-1`
 
 2) Download the cfn (CloudFormation) templates:
- `a.	master-rke.yml`
- `b.	codebuild-secretsmanager.yml`
- `c.	rke-securitygroup.yml`
-` d.	rke-nodes.yml`
- `e.	codebuild-installer.yml`
+``` a.	master-rke.yml
+    b.	codebuild-secretsmanager.yml
+    c.	rke-securitygroup.yml
+    d.	rke-nodes.yml
+    e.	codebuild-installer.yml
+```
 
 3) Modify the S3 TemplateURLs in the master-rke.yml template with your bucket url details.
+``` 
  •	master-rke.yml:
- o	line 158
- o	line 167
- o	line 196
- o	line 225
+   o	line 158
+   o	line 167
+   o	line 196
+   o	line 225
+ ```
  
  Example:
-`Resources:
+```
+Resources:
   RKEMasterStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -48,7 +52,8 @@ Example:
         KeyName: !Ref KeyName
         SecretsManager: !Ref SecretsManager
       TemplateURL: https://<your-bucket-name>.us-east-1.amazonaws.com/codebuild-secretsmanager.yml
-      TimeoutInMinutes: 15`
+      TimeoutInMinutes: 15
+```
 
 Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
 
