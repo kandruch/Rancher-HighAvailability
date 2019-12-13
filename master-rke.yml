@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'RKE - Master Stack which creates all required nested stacks'
+
+###############################################################################
+#                               Metadata                                      #
+###############################################################################
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+        - InstanceName
+        - InstanceType
+        - EBSVolumeSize
+        # - LatestAmiId
+        - EC2Subnet1
+        - EC2Subnet2
+        # - EC2Subnet3
+        - KeyName
+        - SecretsManager
+        - InstanceIamProfile
+        - VpcId
+      - Label:
+          default: LoadBalancer Configuration
+        Parameters:
+          - LoadBalancerName
+          - LoadBalancerProtocol
+          - LoadBalancerScheme
+          - Port
+      - Label:
+          default: TargetGroup Configuration
+        Parameters:
+          - TargetGroupName
+          - HealthCheckProtocol
+          - HealthyThresholdCount
+          - UnhealthyThresholdCount
+          - HealthCheckIntervalSeconds
+
+###############################################################################
+#                               Parameters                                    #
+###############################################################################
+Parameters:
+########---EC2 INSTANCES---#########
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Type: String
+  SecretsManager:
+    Description: Name of Secret (Note - this needs to be unique within the account!)
+    Type: String
+    Default: RSA
+  InstanceName:
+    Description: Please enter the name of the EC2 Instance.
+    Type: String
+    Default: RKE-K8s
+  InstanceType:
+    Description: Please choose the EC2 Instance type.
+    Type: String
+    Default: t2.large
+    AllowedValues:
+      - m5a.large
+      - m5a.xlarge
+      - m4.large
+      - m4.xlarge
+      - t2.large
+  EBSVolumeSize:
+    Type: Number
+    Description: Size of EBS volume attached to the EC2
+    Default: 20
+    MinValue: 10
+    MaxValue: 100
+  # LatestAmiId:
+  #   Description: SSM path for latest Linux Golden AMI ImageId
+  #   Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+  #   Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  InstanceIamProfile:
+    Description: EC2 instance IAM profile
+    Type: String
+    Default: EC2-Services
+  EC2Subnet1:
+    Description: Please select which subnet this EC2 will be deployed in.
+    Type: AWS::EC2::Subnet::Id
+  EC2Subnet2:
+    Description: Please select which subnet this EC2 will be deployed in.
+    Type: AWS::EC2::Subnet::Id
+  # EC2Subnet3:
+  #   Description: Please select which subnet this EC2 will be deployed in.
+  #   Type: AWS::EC2::Subnet::Id
+  VpcId:
+    Description: VPC ID where the instances will be deployed
+    Type: 'AWS::EC2::VPC::Id'
+
+########---LOAD BALANCER---#########
+# NLB PARAMETERS
+  LoadBalancerName:
+    Type: String
+    Description: This name must be unique per region per account. Maximum 32 characters
+    Default: NLB-Rancher-K8s
+  LoadBalancerProtocol:
+    Type: String
+    Description: Enter the protocol the load balancer accepts.
+    Default: TCP
+    AllowedValues:
+      - TCP
+  LoadBalancerScheme:
+    Description: NLB Scheme (Internal or Internet Facing)
+    Type: String
+    Default: internal
+    AllowedValues:
+      - internal
+      - internet-facing
+  TargetGroupName:
+    Type: String
+    Description: This name must be unique per region per account. Maximum 32 characters
+    Default: TG-Rancher-K8s
+  HealthCheckProtocol:
+    Type: String
+    Description: Enter the protocol the load balancer uses when performing health checks on targets.
+    Default: TCP
+    AllowedValues:
+      - TCP
+  HealthyThresholdCount:
+    Type: Number
+    Default: 3
+    Description: The number of consecutive health checks successes required before considering an unhealthy target healthy. In TCP mode Healthy and UnHealthy must be the same.
+  UnhealthyThresholdCount:
+    Type: Number
+    Default: 3
+    Description: The number of consecutive health check failures required before considering a target unhealthy. In TCP mode Healthy and UnHealthy must be the same.
+  HealthCheckIntervalSeconds:
+    Type: Number
+    Default: 10
+    Description: The approximate amount of time, in seconds, between health checks of an individual target.
+  Port:
+    Type: Number
+    Description: The port on which the targets receive traffic.
+    Default: 443
+########---ROUTE53---#########
+  PHZName:
+    Type: String
+    Default: example.com.
+    Description: The name of your private hosted zone
+# ROUTE 53 RECORD SET
+  ApplicationName:
+    Type: String
+    Default: rancher.example.com.
+    Description: The name of your application
+##############################################################################
+#                               Resources                                    #
+##############################################################################
+Resources:
+# NESTED STACKs
+  RKEMasterStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        KeyName: !Ref KeyName
+        SecretsManager: !Ref SecretsManager
+      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/codebuild-secretsmanager.yml
+      TimeoutInMinutes: 15
+
+  RKESecurityStack:
+    DependsOn: RKEMasterStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        VpcId: !Ref VpcId
+      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/rke-securitygroup.yml
+      TimeoutInMinutes: 15
+
+  RKEStackNodes:
+    DependsOn: RKESecurityStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        KeyName: !Ref KeyName
+        InstanceName: !Ref InstanceName
+        InstanceType: !Ref InstanceType
+        EBSVolumeSize: !Ref EBSVolumeSize
+        # LatestAmiId: !Ref LatestAmiId
+        InstanceIamProfile: !Ref InstanceIamProfile
+        EC2Subnet1: !Ref EC2Subnet1
+        EC2Subnet2: !Ref EC2Subnet2
+        # SecurityGroup: !GetAtt RKESecurityStack.Outputs.RKESecurityGroup
+        VpcId: !Ref VpcId
+        LoadBalancerName: !Ref LoadBalancerName
+        LoadBalancerProtocol: !Ref LoadBalancerProtocol
+        LoadBalancerScheme: !Ref LoadBalancerScheme
+        TargetGroupName: !Ref TargetGroupName
+        HealthCheckProtocol: !Ref HealthCheckProtocol
+        HealthyThresholdCount: !Ref HealthyThresholdCount
+        UnhealthyThresholdCount: !Ref UnhealthyThresholdCount
+        HealthCheckIntervalSeconds: !Ref HealthCheckIntervalSeconds
+        Port: !Ref Port
+        PHZName: !Ref PHZName
+        ApplicationName: !Ref ApplicationName
+      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/rke-nodes.yml
+      TimeoutInMinutes: 15
+
+  # RKEStackInstaller:
+  #   DependsOn: RKEStackNodes
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     Parameters:
+  #       KeyName: !Ref KeyName
+  #       SecretsManager: !Ref SecretsManager
+  #       EC2Subnet1: !Ref EC2Subnet1
+  #       # SecurityGroup: !GetAtt RKESecurityStack.Outputs.RKESecurityGroup
+  #       EBSVolumeSize: !Ref EBSVolumeSize
+  #       LatestAmiId: !Ref LatestAmiId
+  #       InstanceIamProfile: !Ref InstanceIamProfile
+  #     TemplateURL: https://codebuild-11-2019.s3.ca-central-1.amazonaws.com/rke-installer.yml
+  #     TimeoutInMinutes: 15
+
+  RKECodeBuildInstaller:
+    DependsOn: RKEStackNodes
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        KeyName: !Ref KeyName
+        SecretsManager: !Ref SecretsManager
+        ApplicationName: !Ref ApplicationName
+        VpcId: !Ref VpcId
+        EC2Subnet1: !Ref EC2Subnet1
+        EC2Subnet2: !Ref EC2Subnet2
+      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/codebuild-installer.yml
+      TimeoutInMinutes: 15
+###############################################################################
+#                               Exports/Outputs                               #
+###############################################################################
+# Outputs:
+#   KeyName:
+#     Value: !Ref KeyName
