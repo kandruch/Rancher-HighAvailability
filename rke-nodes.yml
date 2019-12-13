@@ -394,16 +394,18 @@ Resources:
 
 # ROUTE 53 RECORD SET
   myDNS:
-    Type: AWS::Route53::RecordSetGroup
+    Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneName: !Ref PHZName
       Comment: Targeted to Rancher LoadBalancer.
-      RecordSets:
-      - Name: !Ref ApplicationName
-        Type: CNAME
-        AliasTarget:
-          HostedZoneId: !GetAtt EaaSNetworkLoadBalancer.CanonicalHostedZoneID
-          DNSName: !GetAtt EaaSNetworkLoadBalancer.DNSName
+      Name: !Ref ApplicationName
+      Type: CNAME
+      TTL: 300
+      # ResourceRecords: !GetAtt EaaSNetworkLoadBalancer.DNSName
+      ResourceRecords:
+        - 'Fn::GetAtt':
+            - EaaSNetworkLoadBalancer
+            - DNSName
 
 ###############################################################################
 #                               Exports/Outputs                               #
