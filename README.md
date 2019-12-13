@@ -13,7 +13,6 @@ In this post we will be using the [Rancher Kubernetes Engine (RKE)](https:/ranch
 ## Breakdown of the AWS services involved
 
 ![Rancher Installation Logic](./rke-installation-logic.png)
-
 The installation logic shown here illustrates the necessary steps involved when the automation kicks off. For example, RKE has a requirement to be able to SSH into K8 nodes to securely communicate and install the necessary configuration packages. In order to achieve this type of connection a private and public key need to be in place before any interactions can happen. Now of course you can create the SSH keys in the regular fashion by launching the EC2 servers you need and defining it there or you can leverage CodeBuild to generate an SSH private and public key, import the private key into AWS secrets manager and the public key into EC2 keypairs.
 
 The main goal here was to automate every aspect of the build in order to have a highly available deployment of Rancher in your AWS account.
@@ -22,8 +21,8 @@ The main goal here was to automate every aspect of the build in order to have a 
 
 1) Create your S3 bucket: Note: Bucket names must be globally unique across all AWS accounts globally.
 
-Example:
-`aws s3 mb s3://rancher-ha –region us-east-1`
+    Example:
+    `aws s3 mb s3://rancher-ha –region us-east-1`
 
 2) Download the cfn (CloudFormation) templates:
 ``` a.	master-rke.yml
@@ -55,12 +54,12 @@ Resources:
       TimeoutInMinutes: 15
 ```
 
-Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
+    Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
 
 4) Upload your CloudFormation files to the s3 bucket (the command below will upload all files located in a directory):
 
-Example:
-`aws s3 cp <your directory path> s3://rancher-ha --recursive --region us-east-1`
+    Example:
+    `aws s3 cp <your directory path> s3://rancher-ha --recursive --region us-east-1`
 
 5) Create an IAM role for EC2 if one does not currently exist https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#ec2-instance-profile. In my case I created one called “EC2-Services” and attached a permissive policy AdministratorAccess for demonstration purposes.
 
@@ -70,6 +69,7 @@ Example:
 
 ![CloudFormation Parameters](./cfn-parameters.png)
 
+
 8) Enter the required values for the CloudFormation Stack name and parameters (keep the default parameters if it suits your needs). I called it “RKE-Installation” and gave my instance names, type, volume size, KeyPair Name, etc… 
 
 Note: this installation assumes you have a VPC created with at least 2 or more private subnets spread across multiple availability zones. If not please create a VPC and subnets before deploying this solution. https://docs.aws.amazon.com/directoryservice/latest/admin-guide/gsg_create_vpc.html
@@ -78,16 +78,18 @@ Note: this installation assumes you have a VPC created with at least 2 or more p
 
 9) Acknowledge that the template contains IAM resources and then Create stack.
 
+
 ![IAM Capabilities](./iam-capabilities.png)
 
-The build takes about 5-10 minutes to complete. You should see a CREATE_IN_PROGRESS status and shortly after, you will see a CREATE_COMPLETE status.
+
+    The build takes about 5-10 minutes to complete. You should see a CREATE_IN_PROGRESS status and shortly after, you will see a CREATE_COMPLETE status.
 
 ![CFN Progress](./cfn-progress.png)
 
-Once the build is complete check CodeBuild and look at the build logs, you will see the installation as complete as shown below:
+    Once the build is complete check CodeBuild and look at the build logs, you will see the installation as complete as shown below:
 
 ![CodeBuild Logs](./codebuild-buildlogs.png)
 
-At this point, the CloudFormation scripts have built the entire solution. You now have a deployment of Rancher running across three EC2 instances in different availability zones behind a network load balancer with a private hosted Route53 zone and a CNAME record set for your chosen domain.
+    At this point, the CloudFormation scripts have built the entire solution. You now have a deployment of Rancher running across three EC2 instances in different availability zones behind a network load balancer with a private hosted Route53 zone and a CNAME record set for your chosen domain.
 
 ![Rancher High Availability Implementation on AWS](./RancherHA.png)
