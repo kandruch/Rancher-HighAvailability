@@ -28,7 +28,7 @@ The main goal here was to automate every aspect of the build in order to have a 
 ``` a.	master-rke.yml
     b.	codebuild-secretsmanager.yml
     c.	rke-securitygroup.yml
-    d.	rke-nodes.yml
+    d.	[rke-nodes.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-nodes.yml) 
     e.	codebuild-installer.yml
 ```
 
