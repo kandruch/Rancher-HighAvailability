@@ -1,4 +1,4 @@
-# High Availability RANCHER - The Automated Way!
+# High Availability Rancher - The Automated Way!
 
 Rancher is an open source application developed for the sole purpose of reducing the complexity of managing multiple Kubernetes (K8s) clusters across various platforms. It enables DevOps engineers a single pane of glass to control K8s clusters wherever they may be, whether it be on-premise or in various cloud providers.
 
