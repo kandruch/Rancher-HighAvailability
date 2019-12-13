@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: 'CodeBuild - SecretsManager Rancher'
+Description: 'CodeBuild - RKE Installer'
 ###############################################################################
 #                               Parameters                                    #
 ###############################################################################
