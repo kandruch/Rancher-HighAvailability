@@ -34,7 +34,7 @@ The main goal here was to automate every aspect of the build in order to have a 
 
 3) Modify the S3 TemplateURLs in the master-rke.yml template with your bucket url details.
 ``` 
- •	master-rke.yml:
+ master-rke.yml:
    o	line 158
    o	line 167
    o	line 196
@@ -54,7 +54,7 @@ Resources:
       TimeoutInMinutes: 15
 ```
 
-    Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
+   Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
 
 4) Upload your CloudFormation files to the s3 bucket (the command below will upload all files located in a directory):
 
@@ -82,14 +82,14 @@ Note: this installation assumes you have a VPC created with at least 2 or more p
 ![IAM Capabilities](./iam-capabilities.png)
 
 
-    The build takes about 5-10 minutes to complete. You should see a CREATE_IN_PROGRESS status and shortly after, you will see a CREATE_COMPLETE status.
+   The build takes about 5-10 minutes to complete. You should see a CREATE_IN_PROGRESS status and shortly after, you will see a CREATE_COMPLETE status.
 
 ![CFN Progress](./cfn-progress.png)
 
-    Once the build is complete check CodeBuild and look at the build logs, you will see the installation as complete as shown below:
+   Once the build is complete check CodeBuild and look at the build logs, you will see the installation as complete as shown below:
 
 ![CodeBuild Logs](./codebuild-buildlogs.png)
 
-    At this point, the CloudFormation scripts have built the entire solution. You now have a deployment of Rancher running across three EC2 instances in different availability zones behind a network load balancer with a private hosted Route53 zone and a CNAME record set for your chosen domain.
+At this point, the CloudFormation scripts have built the entire solution. You now have a deployment of Rancher running      across three EC2 instances in different availability zones behind a network load balancer with a private hosted Route53 zone and a CNAME record set for your chosen domain.
 
 ![Rancher High Availability Implementation on AWS](./RancherHA.png)
