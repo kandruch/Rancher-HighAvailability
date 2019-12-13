@@ -25,11 +25,14 @@ The main goal here was to automate every aspect of the build in order to have a 
     `aws s3 mb s3://rancher-ha –region us-east-1`
 
 2) Download the cfn (CloudFormation) templates:
-    a.	[master-rke.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/master-rke.yml)
-    b.	[codebuild-secretsmanager.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/secretsmanager.yml)
-    c.	[rke-securitygroup.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-securitygroup.yml)
-    d.	[rke-nodes.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-nodes.yml) 
-    e.	[codebuild-installer.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/codebuild-installer.yml)
+    
+    | Files To Download                                                                                                      |
+    | -------------                                                                                                          |
+    | [master-rke.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/master-rke.yml)                      |
+    | [codebuild-secretsmanager.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/secretsmanager.yml)    |
+    | [rke-securitygroup.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-securitygroup.yml)        |
+    | [rke-nodes.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-nodes.yml)                        |
+    | [codebuild-installer.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/codebuild-installer.yml)    |
 
 3) Modify the S3 TemplateURLs in the master-rke.yml template with your bucket url details.
 ``` 
