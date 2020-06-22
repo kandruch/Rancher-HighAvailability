@@ -7,6 +7,10 @@ Parameters:
   VpcId:
     Description: VPC ID where the instances will be deployed
     Type: 'AWS::EC2::VPC::Id'
+  allowedCidr: 
+    Description: CIDR range from which the Rancher services allow the connections
+    Type: 'String'
+    Default: '10.0.0.0/8'
 # ########---EC2 INSTANCES---#########
 #   SecurityGroup:
 #     Description: Please select which security group this EC2 will use.
@@ -32,74 +36,74 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           Description: Node driver SSH provisioning
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 443
           ToPort: 443
           Description: External Load Balancer Access
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 2376
           ToPort: 2376
           Description: Node driver Docker daemon TLS port
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 2379
           ToPort: 2379
           Description: etcd client requests
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 2380
           ToPort: 2380
           Description: etcd peer communication
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 6443
           ToPort: 6443
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 6783
           ToPort: 6783
           Description: Weave Port
         - IpProtocol: udp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 6783
           ToPort: 6784
           Description: Weave UDP Ports
         - IpProtocol: udp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 8472
           ToPort: 8472
           Description: Canal/Flannel VXLAN overlay networking
         - IpProtocol: udp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 4789
           ToPort: 4789
           Description: Flannel VXLAN overlay networking on Windows cluster
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 9099
           ToPort: 9099
           Description: Canal/Flannel livenessProbe/readinessProbe
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 10250
           ToPort: 10250
           Description: kubelet API
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 10254
           ToPort: 10254
           Description: Ingress controller livenessProbe/readinessProbe
         - IpProtocol: tcp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 30000
           ToPort: 32767
           Description: NodePort TCP port range
         - IpProtocol: udp
-          CidrIp: 10.0.0.0/16 #Please Change when using in production environments
+          CidrIp: !Ref allowedCidr
           FromPort: 30000
           ToPort: 32767
           Description: NodePort UDP port range

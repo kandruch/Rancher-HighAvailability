@@ -6,16 +6,48 @@ Today, I'm going to show you how to leverage the power of Rancher in a multi acc
 
 Let's get started!
 
+
+
+FIXED:
+
+* Created rancherConfigBucket parameter in master-rke.yml for easier customization
+* TemplateURL occurrences in master-rke.yml now uses !Join function to leverage the rancherConfigBucket parameter
+* Created allowedCidr parameter in rke-securitygroup.yml for easier customization
+* cleaned up installer codebuild lambda code
+
+
+
+TODO:
+
+- Write up - Two Secrets manager entries must be managed manually (installation will break if they exist)
+
+- Write up - EC2 Key pair that was created during the installation must be managed manually (installation will break if it exists)
+
+- Write up - SSM Param store has two entries 
+
+  - SSH-HostKey-${ApplicationName}
+  - ${ApplicationName}
+
+  These must be managed manually (installation will break if they exist)
+
+- Write up - SecretsManager parameter in master-rke.ynl MUST be unique
+
+- Write up and tech - InstanceIamProfile permission requirement
+
+
+
 ## Initial Setup:
 
-In this post we will be using the [Rancher Kubernetes Engine (RKE)](https:/rancher.com/docs/rke/latest/en/) to simplify the installation complexity of setting up Kubernetes. This of course can be done in various ways, either by using your own laptop and following step by step installation instructions or on an EC2 server itself. However, if your using a laptop or server you need to install various packages like RKE, [Kubectl](https:/kubernetes.io/docs/reference/kubectl/overview/) and [Helm](https:/helm.sh/) in a manual fashion, which of course needs to be completed in a sequential order. My preference was to leverage native AWS services like [CodeBuild](https://aws.amazon.com/codebuild/), [Lambda](https://aws.amazon.com/lambda/), and [SecretsManager](https://aws.amazon.com/secrets-manager/) to not only install the required packages that we need but to successfully and securely install the Rancher services across multiple EC2 machines in an automated way. 
+In this post we will be using the [Rancher Kubernetes Engine (RKE)](https:/rancher.com/docs/rke/latest/en/) to simplify the installation complexity of setting up Kubernetes. This of course can be done in various ways, either by using your own laptop and following step by step installation instructions or on an EC2 server itself. However, if you are using a laptop or a server, you need to manually install additional packages like RKE, [Kubectl](https:/kubernetes.io/docs/reference/kubectl/overview/) and [Helm](https:/helm.sh/) in a sequential order. This post leverages AWS native services like [CodeBuild](https://aws.amazon.com/codebuild/), [Lambda](https://aws.amazon.com/lambda/), and [SecretsManager](https://aws.amazon.com/secrets-manager/) to automate the required package installation across multiple EC2 instances so as to achieve maximum consistency, most security and minimal effort.
+
+
 
 ## Breakdown of the AWS services involved
 
-![Rancher Installation Logic](./rke-installation-logic.png)
-The installation logic shown here illustrates the necessary steps involved when the automation kicks off. For example, RKE has a requirement to be able to SSH into K8 nodes to securely communicate and install the necessary configuration packages. In order to achieve this type of connection a private and public key need to be in place before any interactions can happen. Now of course you can create the SSH keys in the regular fashion by launching the EC2 servers you need and defining it there or you can leverage CodeBuild to generate an SSH private and public key, import the private key into AWS secrets manager and the public key into EC2 keypairs.
+![Rancher Installation Logic](images/rke-installation-logic.png)
+The diagram shown here illustrates the installation flow and mandatory configuration steps. One key example of mandatory configuration steps is the generation of a SSH key pair for the K8 nodes so as to allow the RKE to securely communicate and install the necessary configuration packages. In order to establish the secure channel, a private and public key pair needs to be created. While there are many ways to manage SSH key pairs, the main goal here is to automate every aspect of the build in order to have a highly available and consistent deployment of Rancher in your AWS account.
 
-The main goal here was to automate every aspect of the build in order to have a highly available deployment of Rancher in your AWS account.
+
 
 ## Deploying the Solution
 
@@ -34,29 +66,7 @@ The main goal here was to automate every aspect of the build in order to have a 
     | [rke-nodes.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/rke-nodes.yml)                        |
     | [codebuild-installer.yml](https://github.com/kandruch/Rancher-HighAvailability/blob/master/codebuild-installer.yml)    |
 
-3) Modify the S3 TemplateURLs in the master-rke.yml template with your bucket url details.
-``` 
- master-rke.yml:
-   o	line 158
-   o	line 167
-   o	line 196
-   o	line 225
- ```
- 
- Example:
-```
-Resources:
-  RKEMasterStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
-        KeyName: !Ref KeyName
-        SecretsManager: !Ref SecretsManager
-      TemplateURL: https://<your-bucket-name>.us-east-1.amazonaws.com/codebuild-secretsmanager.yml
-      TimeoutInMinutes: 15
-```
-
-   Note: the rke-securitygroup.yml file has a default cidr range of 10.0.0.0/16. Please update this file to match your cidr range.
+3) In the file rke-securitygroup.yml, adjust the value for the parameter allowedCidr.  The default is 10.0.0.0/16.
 
 4) Upload your CloudFormation files to the s3 bucket (the command below will upload all files located in a directory):
 
@@ -69,29 +79,28 @@ Resources:
 
 7) At the ‘Specify an Amazon S3 template URL’ provide the link to the CloudFormation script (in my case https://rancher-ha.s3.amazonaws.com/master-rke.yml). Choose Next.
 
-![CloudFormation Parameters](./cfn-parameters.png)
-
+![CloudFormation Parameters](images/cfn-parameters.png)
 
 8) Enter the required values for the CloudFormation Stack name and parameters (keep the default parameters if it suits your needs). I called it “RKE-Installation” and gave my instance names, type, volume size, KeyPair Name, etc… 
 
 Note: this installation assumes you have a VPC created with at least 2 or more private subnets spread across multiple availability zones. If not please create a VPC and subnets before deploying this solution. https://docs.aws.amazon.com/directoryservice/latest/admin-guide/gsg_create_vpc.html
 
-![CloudFormation Create Stack](./cfn-details.png)
+![CloudFormation Create Stack](images/cfn-details.png)
 
 9) Acknowledge that the template contains IAM resources and then Create stack.
 
 
-![IAM Capabilities](./iam-capabilities.png)
+![IAM Capabilities](images/iam-capabilities.png)
 
 
    The build takes about 5-10 minutes to complete. You should see a CREATE_IN_PROGRESS status and shortly after, you will see a CREATE_COMPLETE status.
 
-![CFN Progress](./cfn-progress.png)
+![CFN Progress](images/cfn-progress.png)
 
    Once the build is complete check CodeBuild and look at the build logs, you will see the installation as complete as shown below:
 
-![CodeBuild Logs](./codebuild-buildlogs.png)
+![CodeBuild Logs](images/codebuild-buildlogs.png)
 
 At this point, the CloudFormation scripts have built the entire solution. You now have a deployment of Rancher running      across three EC2 instances in different availability zones behind a network load balancer with a private hosted Route53 zone and a CNAME record set for your chosen domain.
 
-![Rancher High Availability Implementation on AWS](./RancherHA.png)
+![Rancher High Availability Implementation on AWS](images/RancherHA.png)

@@ -41,6 +41,12 @@ Metadata:
 #                               Parameters                                    #
 ###############################################################################
 Parameters:
+########---  S3 BUCKET  ---#########
+  rancherConfigBucket:
+    Description: The S3 which has the default RKE configuration
+    Type: String
+    Default: rancher-ha-sandbox-ap-2
+
 ########---EC2 INSTANCES---#########
   KeyName:
     Description: The EC2 Key Pair to allow SSH access to the instances
@@ -156,7 +162,14 @@ Resources:
       Parameters:
         KeyName: !Ref KeyName
         SecretsManager: !Ref SecretsManager
-      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/codebuild-secretsmanager.yml
+      TemplateURL:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref rancherConfigBucket
+            - '.s3.'
+            - !Ref AWS::Region
+            - '.amazonaws.com/codebuild-secretsmanager.yml'
       TimeoutInMinutes: 15
 
   RKESecurityStack:
@@ -165,7 +178,14 @@ Resources:
     Properties:
       Parameters:
         VpcId: !Ref VpcId
-      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/rke-securitygroup.yml
+      TemplateURL:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref rancherConfigBucket
+            - '.s3.'
+            - !Ref AWS::Region
+            - '.amazonaws.com/rke-securitygroup.yml'
       TimeoutInMinutes: 15
 
   RKEStackNodes:
@@ -194,7 +214,14 @@ Resources:
         Port: !Ref Port
         PHZName: !Ref PHZName
         ApplicationName: !Ref ApplicationName
-      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/rke-nodes.yml
+      TemplateURL:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref rancherConfigBucket
+            - '.s3.'
+            - !Ref AWS::Region
+            - '.amazonaws.com/rke-nodes.yml'
       TimeoutInMinutes: 15
 
   # RKEStackInstaller:
@@ -223,7 +250,14 @@ Resources:
         VpcId: !Ref VpcId
         EC2Subnet1: !Ref EC2Subnet1
         EC2Subnet2: !Ref EC2Subnet2
-      TemplateURL: https://rancher-ha.s3.us-east-1.amazonaws.com/codebuild-installer.yml
+      TemplateURL:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref rancherConfigBucket
+            - '.s3.'
+            - !Ref AWS::Region
+            - '.amazonaws.com/codebuild-installer.yml'
       TimeoutInMinutes: 15
 ###############################################################################
 #                               Exports/Outputs                               #
