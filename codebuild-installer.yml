@@ -61,50 +61,48 @@ Resources:
           - !Ref EC2Subnet1
           - !Ref EC2Subnet2
         SecurityGroupIds:
-          # - !Ref SecurityGroup
-        - !ImportValue
-          'Fn::Sub': ${SecurityStackName}-RKESecurityGroupID
+          - !ImportValue
+            'Fn::Sub': ${SecurityStackName}-RKESecurityGroupID
       Source:
         Type: NO_SOURCE
         BuildSpec: !Sub |
           version: 0.2
           phases:
             install:
-              runtime-versions:
-                nodejs: 10
               commands:
                 - echo Entered the install phase...
                 - apt-get install jq -y
-                - aws secretsmanager get-secret-value --secret-id SecretKey${SecretsManager} --region ${AWS::Region} | jq -r .SecretString > ${KeyName}
-                - mkdir ~/.ssh/id_rsa/
-                - mv ${KeyName} ~/.ssh/id_rsa/
+                - mkdir -p ~/.ssh/id_rsa
+                - chmod 500 ~/.ssh
+                - chmod 500 ~/.ssh/id_rsa
+                - mkdir -p $HOME/bin
+                - aws secretsmanager get-secret-value --secret-id SecretKey${SecretsManager} --region ${AWS::Region} | jq -r .SecretString > ~/.ssh/id_rsa/${KeyName}
                 - chmod 400 ~/.ssh/id_rsa/${KeyName}
-                - aws ssm get-parameters --name SSH-HostKey-${ApplicationName} --region ${AWS::Region} | jq -r '.Parameters[0].Value' > hostkey.sh
-                - chmod +x hostkey.sh
-                - ./hostkey.sh
+                - aws ssm get-parameters --name SSH-HostKey-${ApplicationName} --region ${AWS::Region} | jq -r '.Parameters[0].Value' > $HOME/bin/hostkey.sh
+                - sh -x $HOME/bin/hostkey.sh
+                #- aws ssm get-parameters --name ${ApplicationName} --region ${AWS::Region} | jq -r '.Parameters[0].Value' > $HOME/cluster.yml
                 - aws ssm get-parameters --name ${ApplicationName} --region ${AWS::Region} | jq -r '.Parameters[0].Value' > cluster.yml
-                - wget https://github.com/rancher/rke/releases/download/v0.3.2/rke_linux-amd64
-                - mv rke_linux-amd64 rke
-                - chmod +x ./rke
-                - curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
-                - chmod +x kubectl
-                - mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+                - wget https://github.com/rancher/rke/releases/download/v0.3.2/rke_linux-amd64 -O $HOME/bin/rke
+                - wget https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl -O $HOME/bin/kubectl 
+                - chmod +x $HOME/bin/rke
+                - chmod +x $HOME/bin/kubectl
                 - echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-                - mkdir ~/.kube
+                - mkdir $HOME/.kube
 
             pre_build:
               commands:
                 - echo Entered the pre_build phase...
-                - ./rke up
+                - $HOME/bin/rke up
+
             build:
               commands:
                 - echo Entered the build phase...
-                - mv kube_config_cluster.yml ~/.kube/config
+                - mv kube_config_cluster.yml $HOME/.kube/config
                 - kubectl get svc
-                - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
-                - chmod +x ./get_helm.sh
+                - wget https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get -O $HOME/bin/get_helm.sh
+                - chmod +x $HOME/bin/get_helm.sh
                 - echo export PATH=$PATH:/usr/local/bin >> ~/.bashrc
-                - ./get_helm.sh
+                - $HOME/bin/get_helm.sh
                 - kubectl create serviceaccount tiller --namespace kube-system
                 - kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
                 - helm init --wait --service-account tiller
@@ -204,12 +202,16 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: A Lambda function that triggers a CodeBuild Project
+      Timeout: 300
       Handler: index.codebuild_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.7
       Code:
         ZipFile: |
           import boto3
           import cfnresponse
           import logging
+          import json
 
           LOGGER = logging.getLogger()
           LOGGER.setLevel(logging.INFO)
@@ -218,10 +220,9 @@ Resources:
           codebuild_client = boto3.client('codebuild')
 
           def codebuild_handler(event, context):
-            # LOGGER.info('got event {}'.format(event))
-            responseData = {}
+            print("event ", event)
 
-            if event["RequestType"] =="Create":
+            if event["RequestType"] == "Create":
               # Creating resource
               LOGGER.info('CREATE!')
               # Create KeyPair
@@ -229,27 +230,21 @@ Resources:
               start_build = codebuild_client.start_build(
                   projectName=event['ResourceProperties']['ProjectName'])
               cfnresponse.send(event, context, cfnresponse.SUCCESS, creating)
-              print(start_build)
-              return start_build
 
-            if event["RequestType"] == "Update":
+            elif event["RequestType"] == "Update":
               # Updating resource
               updating = (event['ResourceProperties'])
               LOGGER.info('UPDATE!')
               cfnresponse.send(event, context, cfnresponse.SUCCESS, updating)
 
-            if event["RequestType"] == "Delete":
+            elif event["RequestType"] == "Delete":
               # Get object name and version id details
               deleting = (event['ResourceProperties'])
               LOGGER.info('DELETE!')
               cfnresponse.send(event, context, cfnresponse.SUCCESS, deleting)
 
-            else:
-              response = cfnresponse.FAILED
-              return response
-
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: python3.7
+            response = cfnresponse.FAILED
+            return response
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role

@@ -187,12 +187,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
               #!/bin/bash
-              sudo yum update -y
-              sudo amazon-linux-extras install -y docker
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-              sudo yum install wget -y
-              sudo yum install jq -y
+              yum update -y
+              amazon-linux-extras install -y docker
+              service docker start
+              usermod -a -G docker ec2-user
+              yum install -y wget
+              yum install -y jq
               echo ${AWS::StackName}
       Tags:
         - Key: Name
@@ -219,12 +219,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
               #!/bin/bash
-              sudo yum update -y
-              sudo amazon-linux-extras install -y docker
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-              sudo yum install wget -y
-              sudo yum install jq -y
+              yum update -y
+              amazon-linux-extras install -y docker
+              service docker start
+              usermod -a -G docker ec2-user
+              yum install -y wget
+              yum install -y jq -y
               echo ${AWS::StackName}
       Tags:
         - Key: Name
@@ -251,12 +251,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
               #!/bin/bash
-              sudo yum update -y
-              sudo amazon-linux-extras install -y docker
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-              sudo yum install wget -y
-              sudo yum install jq -y
+              yum update -y
+              amazon-linux-extras install -y docker
+              service docker start
+              usermod -a -G docker ec2-user
+              yum install -y wget
+              yum install -y jq
               echo ${AWS::StackName}
       Tags:
         - Key: Name
@@ -284,15 +284,15 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
               #!/bin/bash
-              sudo yum update -y
-              sudo amazon-linux-extras install -y docker
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-              sudo yum install wget -y
-              sudo yum install jq -y
+              yum update -y
+              amazon-linux-extras install -y docker
+              service docker start
+              usermod -a -G docker ec2-user
+              yum install -y wget
+              yum install -y jq
 
               ### Create RKE cluster.yml file
-              cat > cluster.yml <<EOF
+              cat > /tmp/cluster.yml <<EOF
               nodes:
                 - address: ${EC2Instance1.PrivateIp}
                   internal_address: ${EC2Instance1.PrivateIp}
@@ -320,18 +320,19 @@ Resources:
               EOF
 
               ### Store file in parameter store
-              aws ssm put-parameter --name ${ApplicationName} --type "String" --value "$(cat cluster.yml)" --region ${AWS::Region}
+              aws ssm put-parameter --name ${ApplicationName} --type "String" --value "$(cat /tmp/cluster.yml)" --region ${AWS::Region}
+              rm -f /tmp/cluster.yml
 
               ### Create SSH-HostKey hostkey.yml file
-              cat > hostkey.sh <<EOF
+              cat > /tmp/hostkey.sh <<EOF
               ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa/${KeyName} ec2-user@${EC2Instance1.PrivateIp} uptime
               ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa/${KeyName} ec2-user@${EC2Instance2.PrivateIp} uptime
               ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa/${KeyName} ec2-user@${EC2Instance3.PrivateIp} uptime
-              exit
               EOF
 
               ### Store file in parameter store
-              aws ssm put-parameter --name SSH-HostKey-${ApplicationName} --type "String" --value "$(cat hostkey.sh)" --region ${AWS::Region}
+              aws ssm put-parameter --name SSH-HostKey-${ApplicationName} --type "String" --value "$(cat /tmp/hostkey.sh)" --region ${AWS::Region}
+              rm -f /tmp/hostkey.sh
 
       Tags:
         - Key: Name
