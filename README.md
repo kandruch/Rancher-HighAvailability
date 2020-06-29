@@ -7,35 +7,6 @@ Today, I'm going to show you how to leverage the power of Rancher in a multi acc
 Let's get started!
 
 
-
-FIXED:
-
-* Created rancherConfigBucket parameter in master-rke.yml for easier customization
-* TemplateURL occurrences in master-rke.yml now uses !Join function to leverage the rancherConfigBucket parameter
-* Created allowedCidr parameter in rke-securitygroup.yml for easier customization
-* cleaned up installer codebuild lambda code
-
-
-
-TODO:
-
-- Write up - Two Secrets manager entries must be managed manually (installation will break if they exist)
-
-- Write up - EC2 Key pair that was created during the installation must be managed manually (installation will break if it exists)
-
-- Write up - SSM Param store has two entries 
-
-  - SSH-HostKey-${ApplicationName}
-  - ${ApplicationName}
-
-  These must be managed manually (installation will break if they exist)
-
-- Write up - SecretsManager parameter in master-rke.ynl MUST be unique
-
-- Write up and tech - InstanceIamProfile permission requirement
-
-
-
 ## Initial Setup:
 
 In this post we will be using the [Rancher Kubernetes Engine (RKE)](https:/rancher.com/docs/rke/latest/en/) to simplify the installation complexity of setting up Kubernetes. This of course can be done in various ways, either by using your own laptop and following step by step installation instructions or on an EC2 server itself. However, if you are using a laptop or a server, you need to manually install additional packages like RKE, [Kubectl](https:/kubernetes.io/docs/reference/kubectl/overview/) and [Helm](https:/helm.sh/) in a sequential order. This post leverages AWS native services like [CodeBuild](https://aws.amazon.com/codebuild/), [Lambda](https://aws.amazon.com/lambda/), and [SecretsManager](https://aws.amazon.com/secrets-manager/) to automate the required package installation across multiple EC2 instances so as to achieve maximum consistency, most security and minimal effort.
